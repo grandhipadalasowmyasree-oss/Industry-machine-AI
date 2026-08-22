@@ -1,0 +1,57 @@
+INDUSTRIAL MACHINE MAINTENANCE GUIDE
+
+Document ID: MG-001
+Version: 1.0
+
+1. GENERAL MAINTENANCE
+
+Regular maintenance is required to keep industrial machines operating safely and efficiently. Maintenance should be performed according to the machine operating schedule and approved procedures.
+
+2. MOTOR OVERHEATING
+
+If the motor temperature becomes unusually high, the following conditions should be inspected:
+
+- Cooling system condition
+- Ventilation around the motor
+- Motor load
+- Bearing condition
+- Lubrication condition
+- Operating environment
+
+The machine should not be operated outside its specified operating limits.
+
+3. HIGH VIBRATION
+
+High vibration may indicate a mechanical or operating problem. The following should be inspected:
+
+- Bearing condition
+- Shaft alignment
+- Loose components
+- Mechanical wear
+- Motor mounting
+- Operating load
+
+If abnormal vibration continues, the machine should be inspected according to the approved maintenance procedure.
+
+4. BEARING MAINTENANCE
+
+Bearings should be inspected regularly for abnormal temperature, vibration, noise, wear, and lubrication problems.
+
+If bearing temperature increases significantly, inspect lubrication, alignment, bearing condition, and cooling conditions.
+
+5. PREVENTIVE MAINTENANCE
+
+Preventive maintenance should include:
+
+- Regular inspection of machine components
+- Checking temperature and vibration
+- Checking oil and lubrication levels
+- Inspecting bearings
+- Checking electrical connections
+- Recording maintenance activities
+
+6. MAINTENANCE RECORDS
+
+All maintenance activities should be recorded with the date, machine identification, observed condition, action performed, and responsible personnel.
+
+END OF DOCUMENT

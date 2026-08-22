@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Create Account - AI Industrial Assistant</title>
+
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+
+            min-height: 100vh;
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            background:
+                radial-gradient(
+                    circle at top left,
+                    #1e3a8a 0%,
+                    transparent 35%
+                ),
+
+                radial-gradient(
+                    circle at bottom right,
+                    #0f766e 0%,
+                    transparent 35%
+                ),
+
+                linear-gradient(
+                    135deg,
+                    #07111f,
+                    #0b1728,
+                    #101827
+                );
+
+            color: white;
+        }
+
+        .register-card {
+
+            width: 430px;
+
+            padding: 40px;
+
+            background: rgba(
+                255,
+                255,
+                255,
+                0.08
+            );
+
+            border: 1px solid rgba(
+                255,
+                255,
+                255,
+                0.15
+            );
+
+            border-radius: 20px;
+
+            backdrop-filter: blur(20px);
+
+            box-shadow:
+                0 25px 60px
+                rgba(0,0,0,0.45);
+        }
+
+        .logo {
+
+            text-align: center;
+
+            font-size: 50px;
+
+            margin-bottom: 10px;
+        }
+
+        h1 {
+
+            text-align: center;
+
+            font-size: 25px;
+
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+
+            text-align: center;
+
+            color: #aab7c7;
+
+            font-size: 14px;
+
+            margin-bottom: 25px;
+        }
+
+        label {
+
+            display: block;
+
+            color: #dce6f2;
+
+            font-size: 14px;
+
+            font-weight: bold;
+
+            margin-bottom: 7px;
+        }
+
+        input {
+
+            width: 100%;
+
+            padding: 13px;
+
+            margin-bottom: 17px;
+
+            background:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.08
+                );
+
+            border: 1px solid
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.18
+                );
+
+            border-radius: 8px;
+
+            color: white;
+
+            outline: none;
+
+            font-size: 14px;
+        }
+
+        input::placeholder {
+
+            color: #8c9aaa;
+        }
+
+        input:focus {
+
+            border-color: #3b82f6;
+
+            box-shadow:
+                0 0 0 3px
+                rgba(
+                    59,
+                    130,
+                    246,
+                    0.15
+                );
+        }
+
+        button {
+
+            width: 100%;
+
+            padding: 14px;
+
+            border: none;
+
+            border-radius: 9px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #2563eb,
+                    #0ea5e9
+                );
+
+            color: white;
+
+            font-size: 16px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+
+            margin-top: 5px;
+        }
+
+        button:hover {
+
+            box-shadow:
+                0 8px 25px
+                rgba(
+                    37,
+                    99,
+                    235,
+                    0.4
+                );
+        }
+
+        .error {
+
+            background:
+                rgba(
+                    239,
+                    68,
+                    68,
+                    0.15
+                );
+
+            border: 1px solid
+                rgba(
+                    239,
+                    68,
+                    68,
+                    0.3
+                );
+
+            color: #fca5a5;
+
+            padding: 10px;
+
+            border-radius: 8px;
+
+            margin-bottom: 18px;
+
+            text-align: center;
+
+            font-size: 13px;
+        }
+
+        .login-link {
+
+            text-align: center;
+
+            margin-top: 20px;
+
+            font-size: 13px;
+
+            color: #9caabd;
+        }
+
+        .login-link a {
+
+            color: #60a5fa;
+
+            text-decoration: none;
+
+            font-weight: bold;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="register-card">
+
+        <div class="logo">
+            🏭
+        </div>
+
+        <h1>
+            Create Account
+        </h1>
+
+        <p class="subtitle">
+            Create your AI Industrial Assistant account
+        </p>
+
+        {% if error %}
+
+        <div class="error">
+            {{ error }}
+        </div>
+
+        {% endif %}
+
+        <form
+            method="POST"
+            action="{{ url_for('create_account') }}"
+        >
+
+            <label>
+                Full Name
+            </label>
+
+            <input
+                type="text"
+                name="username"
+                placeholder="Enter your name"
+                required
+            >
+
+            <label>
+                Email
+            </label>
+
+            <input
+                type="email"
+                name="email"
+                placeholder="Enter your email"
+                required
+            >
+
+            <label>
+                Password
+            </label>
+
+            <input
+                type="password"
+                name="password"
+                placeholder="Create a password"
+                required
+            >
+
+            <label>
+                Confirm Password
+            </label>
+
+            <input
+                type="password"
+                name="confirm_password"
+                placeholder="Confirm your password"
+                required
+            >
+
+            <button type="submit">
+                CREATE ACCOUNT
+            </button>
+
+        </form>
+
+        <div class="login-link">
+
+            Already have an account?
+
+            <a href="{{ url_for('login') }}">
+                Login
+            </a>
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>

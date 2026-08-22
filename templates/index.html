@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AI Industrial Assistant</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="app-container">
+
+    <!-- ================= SIDEBAR ================= -->
+
+    <aside class="sidebar">
+
+        <div class="brand">
+            <h2>🤖 AI Industrial Assistant</h2>
+            <p>Powered by Gemini + RAG</p>
+        </div>
+
+        <hr>
+
+        <!-- New Chat -->
+
+        <button id="newChatBtn" class="new-chat-btn">
+            ➕ New Chat
+        </button>
+
+        <hr>
+
+        <!-- Search Conversations -->
+
+        <div class="search-section">
+
+            <h3>🔍 Search Conversations</h3>
+
+            <input
+                type="text"
+                id="searchInput"
+                placeholder="Search..."
+            >
+
+        </div>
+
+        <!-- Recent Conversations -->
+
+        <div class="recent-section">
+
+            <h3>Recent Conversations</h3>
+
+            <div id="conversationList">
+
+                <div class="no-conversations">
+                    No conversations found.
+                </div>
+
+            </div>
+
+        </div>
+
+    </aside>
+
+
+    <!-- ================= MAIN CHAT ================= -->
+
+    <main class="main-content">
+
+        <header class="chat-header">
+
+            <h1>🤖 AI Industrial Assistant</h1>
+
+            <p>
+                Safety & Maintenance RAG Assistant
+            </p>
+
+        </header>
+
+
+        <!-- ================= CHAT MESSAGES ================= -->
+
+        <div id="chatBox" class="chat-box">
+
+            <div class="welcome-message">
+
+                <h2>👋 Welcome</h2>
+
+                <p>
+                   <h3>I am your AI Industrial Safety and Maintenance Assistant.</h3> 
+                </p>
+
+
+
+                <p>
+                    <h3>Ask me about machine maintenance, safety procedures,
+                    vibration, overheating, bearings, and more.</h3>
+                </p>
+
+            </div>
+
+        </div>
+
+
+  <div class="input-area">
+
+
+    <textarea
+        id="questionInput"
+        placeholder="Type your message..."
+        rows="1"
+    ></textarea>
+    <button
+        id="voiceBtn"
+        type="button"
+        title="Voice input"
+    >
+        🎙️
+    </button>
+
+    <button
+        id="sendBtn"
+        type="button"
+        title="Send"
+    >
+        ↑
+    </button>
+
+</div>
+
+    </main>
+
+</div>
+
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>

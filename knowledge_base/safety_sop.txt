@@ -1,0 +1,80 @@
+INDUSTRIAL MACHINE SAFETY STANDARD OPERATING PROCEDURE
+
+Document ID: SOP-001
+Version: 1.0
+
+1. PURPOSE
+
+This procedure provides general safety guidance for operating, inspecting, and maintaining industrial machinery.
+
+2. PERSONAL PROTECTIVE EQUIPMENT
+
+Personnel working near industrial machinery should use the required personal protective equipment based on the site risk assessment. Typical PPE may include:
+
+- Safety helmet
+- Safety glasses
+- Safety footwear
+- Protective gloves when appropriate
+- Hearing protection in high-noise areas
+- Protective clothing when required
+
+3. BEFORE OPERATING A MACHINE
+
+Before starting a machine, the operator should:
+
+- Check the machine for visible damage.
+- Verify that guards and protective devices are in place.
+- Check for unusual leaks.
+- Check that the operating area is clear.
+- Confirm that emergency stop devices are accessible.
+- Verify that required inspections have been completed.
+- Review any active warnings or alarms.
+
+4. ABNORMAL MACHINE CONDITIONS
+
+If a machine shows abnormal temperature, vibration, noise, pressure, or other warning signs:
+
+- Stop and assess the situation according to the approved site procedure.
+- Do not bypass safety devices.
+- Keep unauthorized personnel away from the affected area.
+- Report the abnormal condition to the responsible maintenance personnel.
+- Follow the applicable troubleshooting and maintenance procedure.
+
+5. MACHINE MAINTENANCE SAFETY
+
+Before performing maintenance:
+
+- Follow the site's approved isolation procedure.
+- Shut down the machine using the appropriate procedure.
+- Isolate relevant energy sources.
+- Verify that the machine cannot unexpectedly start.
+- Use appropriate PPE.
+- Use approved tools and equipment.
+- Follow the machine-specific maintenance instructions.
+
+6. EMERGENCY PROCEDURE
+
+In an emergency:
+
+- Follow the site's emergency response procedure.
+- Use the emergency stop when appropriate.
+- Move personnel away from hazardous areas.
+- Notify the responsible supervisor or emergency response team.
+- Do not restart equipment until it has been inspected and cleared according to the approved procedure.
+
+7. PROHIBITED ACTIONS
+
+Personnel should not:
+
+- Bypass safety guards.
+- Disable safety interlocks.
+- Operate machinery outside approved limits.
+- Perform maintenance without proper authorization.
+- Ignore repeated alarms or abnormal machine conditions.
+- Restart equipment before required safety checks are completed.
+
+8. REPORTING
+
+All significant machine abnormalities, safety incidents, and maintenance activities should be documented according to site procedures.
+
+END OF DOCUMENT

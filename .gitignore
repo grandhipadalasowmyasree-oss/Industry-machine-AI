@@ -1,0 +1,7 @@
+venv/
+__pycache__/
+*.pyc
+.env
+conversations.db
+chroma_db/
+.vscode/

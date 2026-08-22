@@ -1,0 +1,118 @@
+INDUSTRIAL MACHINE TROUBLESHOOTING GUIDE
+
+Document ID: TG-001
+Version: 1.0
+
+1. PURPOSE
+
+This guide provides general troubleshooting information for common abnormal conditions observed in industrial machines.
+
+2. HIGH TEMPERATURE
+
+Possible causes:
+
+- Excessive machine load
+- Poor ventilation
+- Cooling system problems
+- Bearing problems
+- Insufficient lubrication
+- Extended operation
+
+Recommended checks:
+
+- Check the machine load.
+- Inspect the cooling system.
+- Check ventilation.
+- Inspect bearing condition.
+- Check lubrication.
+- Review recent maintenance records.
+
+3. HIGH VIBRATION
+
+Possible causes:
+
+- Shaft misalignment
+- Bearing wear
+- Loose components
+- Mechanical imbalance
+- Excessive operating load
+- Mechanical damage
+
+Recommended checks:
+
+- Inspect bearings.
+- Check shaft alignment.
+- Inspect mounting and fasteners.
+- Check for mechanical imbalance.
+- Review the operating load.
+- Compare current vibration with normal operating conditions.
+
+4. LOW OIL PRESSURE
+
+Possible causes:
+
+- Low oil level
+- Oil leakage
+- Blocked filter
+- Pump problem
+- Incorrect oil condition
+
+Recommended checks:
+
+- Check oil level.
+- Inspect for visible leaks.
+- Inspect the oil filter.
+- Check the lubrication system.
+- Follow the machine-specific maintenance procedure.
+
+5. ABNORMAL NOISE
+
+Possible causes:
+
+- Bearing wear
+- Loose components
+- Mechanical friction
+- Misalignment
+- Damaged components
+
+Recommended checks:
+
+- Identify the source of the noise.
+- Inspect bearings.
+- Check fasteners and mounting.
+- Inspect alignment.
+- Follow the approved maintenance procedure.
+
+6. MACHINE NOT OPERATING
+
+Possible causes:
+
+- Electrical supply problem
+- Safety interlock active
+- Control system fault
+- Emergency stop activated
+- Mechanical fault
+
+Recommended checks:
+
+- Check the machine status and alarms.
+- Verify the emergency stop status.
+- Check the electrical supply according to the approved procedure.
+- Check safety interlocks.
+- Contact authorized maintenance personnel when required.
+
+7. REPEATED WARNINGS
+
+If the same warning occurs repeatedly:
+
+- Record the warning information.
+- Review recent machine conditions.
+- Check maintenance records.
+- Do not repeatedly reset or bypass safety warnings.
+- Escalate the issue to authorized maintenance personnel.
+
+8. IMPORTANT SAFETY NOTE
+
+Troubleshooting information is general guidance. Always follow the machine manufacturer's instructions and the organization's approved safety procedures.
+
+END OF DOCUMENT
