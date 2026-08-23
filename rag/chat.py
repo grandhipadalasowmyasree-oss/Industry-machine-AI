@@ -1,35 +1,25 @@
 import re
-import os
 import pandas as pd
-import chromadb
 from google import genai
 from dotenv import load_dotenv
 
-# =========================================================
-# LOAD ENVIRONMENT VARIABLES
-# =========================================================
+# ============================================
+# ENVIRONMENT
+# ============================================
 
 load_dotenv()
 
-
-# =========================================================
+# ============================================
 # GEMINI
-# =========================================================
-
-api_key = os.getenv("GEMINI_API_KEY")
-
-if not api_key:
-    print("WARNING: GEMINI_API_KEY not found.")
+# ============================================
 
 client = genai.Client(
-    api_key=api_key,
     http_options={"api_version": "v1"}
 )
 
-
-# =========================================================
-# LOAD TRAIN DATA
-# =========================================================
+# ============================================
+# LOAD DATASET
+# ============================================
 
 df = pd.read_csv("data/train.csv")
 
@@ -37,39 +27,9 @@ print("Machine dataset loaded!")
 print("Total machines:", len(df))
 
 
-# =========================================================
-# CHROMADB
-# =========================================================
-
-try:
-
-    chroma_client = chromadb.PersistentClient(
-        path="chroma_db"
-    )
-
-    collection = chroma_client.get_collection(
-        name="industrial_knowledge"
-    )
-
-    print(
-        "Documents in ChromaDB:",
-        collection.count()
-    )
-
-except Exception as e:
-
-    print(
-        "ChromaDB could not be loaded:",
-        e
-    )
-
-    chroma_client = None
-    collection = None
-
-
-# =========================================================
+# ============================================
 # FIND MACHINE ID
-# =========================================================
+# ============================================
 
 def find_machine_id(question):
 
@@ -79,211 +39,127 @@ def find_machine_id(question):
     )
 
     if match:
-
         return match.group(1)
 
     return None
 
 
-# =========================================================
+# ============================================
 # GET MACHINE FROM CSV
-# =========================================================
+# ============================================
 
 def get_machine_from_csv(machine_id):
 
-    machine = df[
-        df["id"].astype(str) == str(machine_id)
-    ]
+    try:
+        machine_id = int(machine_id)
 
-    if machine.empty:
+        machine = df[
+            pd.to_numeric(
+                df["id"],
+                errors="coerce"
+            ) == machine_id
+        ]
+
+        if machine.empty:
+            print(
+                f"Machine {machine_id} not found."
+            )
+            return None
+
+        print(
+            f"Machine {machine_id} found!"
+        )
+
+        return machine.iloc[0]
+
+    except Exception as e:
+
+        print(
+            "DATASET SEARCH ERROR:",
+            e
+        )
 
         return None
 
-    return machine.iloc[0]
 
-
-# =========================================================
-# CONVERT MACHINE DATA TO TEXT
-# =========================================================
+# ============================================
+# MACHINE DATA → TEXT
+# ============================================
 
 def machine_to_text(machine):
 
     return f"""
 Machine ID: {machine['id']}
-
 Machine Type: {machine['machine_type']}
-
 Facility Zone: {machine['facility_zone']}
-
 Shift: {machine['shift']}
-
 Sensor Model: {machine['sensor_model']}
-
 Maintenance Strategy: {machine['maintenance_strategy']}
 
 Load: {machine['load_pct']} %
-
 RPM: {machine['rpm']}
-
 Power: {machine['power_kw']} kW
-
 Voltage: {machine['voltage_v']} V
-
 Power Factor: {machine['power_factor']}
-
 Vibration: {machine['vibration_mm_s']} mm/s
-
 Oil Pressure: {machine['oil_pressure_bar']} bar
-
 Coolant Temperature: {machine['coolant_temp_c']} °C
-
 Bearing Temperature: {machine['bearing_temp_c']} °C
 
 Operating Hours: {machine['operating_hours']}
-
 Days Since Maintenance: {machine['days_since_maintenance']}
-
 Anomaly Count (7d): {machine['anomaly_count_7d']}
-
 Sensor Uptime: {machine['sensor_uptime_pct']} %
-
 Machine State: {machine['machine_state']}
 """
 
 
-# =========================================================
-# MACHINE SEARCH
-# =========================================================
+# ============================================
+# RETRIEVE DOCUMENTS
+# ============================================
+def retrieve_documents(question):
 
-def search_machine(question):
+    print("QUESTION RECEIVED:", question)
 
     machine_id = find_machine_id(question)
 
-    if not machine_id:
+    print("DETECTED MACHINE ID:", machine_id)
 
-        return None, None
+    if machine_id:
 
-    print(
-        f"\nSearching machine {machine_id}..."
-    )
+        machine = get_machine_from_csv(machine_id)
 
-    machine = get_machine_from_csv(
-        machine_id
-    )
+        print("MACHINE RESULT:", machine is not None)
 
-    if machine is None:
+        if machine is not None:
 
-        print(
-            f"Machine {machine_id} "
-            "was not found in train.csv."
-        )
+            machine_text = machine_to_text(machine)
 
-        return None, machine_id
+            print("MACHINE DATA FOUND!")
+            print(machine_text)
 
-    machine_text = machine_to_text(
-        machine
-    )
+            sources = [{
+                "source": "train.csv",
+                "machine_id": machine_id
+            }]
 
-    print(
-        "\nMachine found successfully."
-    )
+            return [machine_text], sources
 
-    sources = [
-        {
-            "source": "train.csv",
-            "machine_id": machine_id
-        }
-    ]
+        else:
 
-    return machine_text, sources
+            print(
+                f"Machine {machine_id} was not found."
+            )
 
+            return [], []
 
-# =========================================================
-# SIMPLE CHROMADB SEARCH
-# =========================================================
+    print("NO MACHINE ID DETECTED.")
 
-def search_knowledge_base(question):
+    return [], []
 
-    if collection is None:
-
-        print(
-            "Knowledge base is not available."
-        )
-
-        return [], []
-
-    try:
-
-        # ChromaDB can use its configured embedding
-        # function if the collection was created with one.
-
-        results = collection.query(
-            query_texts=[question],
-            n_results=3
-        )
-
-        documents = results.get(
-            "documents",
-            [[]]
-        )[0]
-
-        sources = results.get(
-            "metadatas",
-            [[]]
-        )[0]
-
-        return documents, sources
-
-    except Exception as e:
-
-        print(
-            "Knowledge base search error:",
-            e
-        )
-
-        return [], []
-
-
-# =========================================================
-# RETRIEVE DOCUMENTS
-# =========================================================
-
-def retrieve_documents(question):
-
-    # =====================================================
-    # FIRST: CHECK MACHINE ID
-    # =====================================================
-
-    machine_text, machine_sources = search_machine(
-        question
-    )
-
-    if machine_text:
-
-        return [
-            machine_text
-        ], machine_sources
-
-
-    # =====================================================
-    # SECOND: SEARCH KNOWLEDGE BASE
-    # =====================================================
-
-    print(
-        "\nSearching industrial "
-        "safety knowledge base..."
-    )
-
-    documents, sources = search_knowledge_base(
-        question
-    )
-
-    return documents, sources
-
-
-# =========================================================
+# ============================================
 # GENERATE ANSWER
-# =========================================================
+# ============================================
 
 def generate_answer(
     question,
@@ -294,163 +170,83 @@ def generate_answer(
     if not documents:
 
         return (
-            "I don't have enough information "
-            "in the provided knowledge base."
+            "I could not find the requested "
+            "machine information."
         )
 
-
-    # =====================================================
-    # CREATE CONTEXT
-    # =====================================================
-
-    context = "\n\n".join(
-        documents
-    )
-
-
-    # =====================================================
-    # PROMPT
-    # =====================================================
+    context = "\n\n".join(documents)
 
     prompt = f"""
 You are an AI Industrial Safety and
 Maintenance Assistant.
 
-Your job is to answer questions about
-industrial machines, safety and maintenance.
+Answer the user's question using ONLY
+the provided machine data.
 
-IMPORTANT RULES:
+Do not invent any sensor values.
 
-1. Use ONLY the information provided in
-   the context.
-
-2. Never invent sensor values.
-
-3. If machine data is available,
-   use the exact values.
-
-4. Always pay attention to the Machine ID.
-
-5. For machine-specific questions,
-   give a machine-specific answer.
-
-6. Do not invent information that is
-   not present in the context.
-
-7. Keep the answer simple and easy
-   to understand.
-
-8. If the context does not contain
-   enough information, clearly say that
-   the information is not available.
-
-
-For overheating questions, consider:
-
-- Load
-- RPM
-- Power
-- Vibration
-- Oil pressure
-- Coolant temperature
-- Bearing temperature
-- Operating hours
-- Days since maintenance
-- Anomaly count
-
-
-For maintenance questions, consider:
-
-- Days since maintenance
-- Operating hours
-- Maintenance strategy
-- Vibration
-- Temperature
-- Oil pressure
-
-
-CONTEXT:
+Machine data:
 
 {context}
 
-
-USER QUESTION:
+User question:
 
 {question}
 
+Instructions:
 
-RESPONSE FORMAT:
+1. Give the direct answer first.
+2. Mention the important sensor values.
+3. For overheating questions, analyze:
+   - Load
+   - RPM
+   - Power
+   - Vibration
+   - Oil pressure
+   - Coolant temperature
+   - Bearing temperature
+   - Operating hours
+   - Days since maintenance
+   - Anomaly count
 
-Give the direct answer first.
+4. For maintenance questions, analyze:
+   - Maintenance strategy
+   - Days since maintenance
+   - Operating hours
+   - Vibration
+   - Temperature
+   - Oil pressure
 
-Then mention the important sensor
-values or information.
-
-Then explain the possible reason
-when the context supports it.
-
-Use bullet points when useful.
-
-Keep the response clear and concise.
+5. Keep the answer simple and clear.
+6. Use bullet points when useful.
 """
 
+    try:
 
-    # =====================================================
-    # GEMINI MODELS
-    # =====================================================
+        response = client.models.generate_content(
+            model="gemini-3.7-flash",
+            contents=prompt
+        )
 
-    models_to_try = [
-        "gemini-2.5-flash",
-        "gemini-2.0-flash"
-    ]
+        return response.text
 
+    except Exception as e:
 
-    # =====================================================
-    # GENERATE RESPONSE
-    # =====================================================
+        print(
+            "GEMINI ERROR:",
+            e
+        )
 
-    for model_name in models_to_try:
-
-        try:
-
-            print(
-                f"Generating answer using {model_name}..."
-            )
-
-            response = client.models.generate_content(
-                model=model_name,
-                contents=prompt
-            )
-
-            if response and response.text:
-
-                return response.text
+        return (
+            "Sorry, I could not generate "
+            "an answer at the moment. "
+            "Please try again."
+        )
 
 
-        except Exception as e:
-
-            print(
-                f"Model {model_name} failed:"
-            )
-
-            print(e)
-
-            continue
-
-
-    # =====================================================
-    # ALL MODELS FAILED
-    # =====================================================
-
-    return (
-        "Sorry, I could not generate an answer "
-        "at the moment. Please try again."
-    )
-
-
-# =========================================================
-# TERMINAL CHAT
-# =========================================================
+# ============================================
+# TERMINAL TEST
+# ============================================
 
 if __name__ == "__main__":
 
@@ -459,30 +255,20 @@ if __name__ == "__main__":
     )
 
     print(
-        "Type 'exit' to stop.\n"
+        "Type exit to stop.\n"
     )
-
 
     while True:
 
-        question = input(
-            "You: "
-        )
-
+        question = input("You: ")
 
         if question.lower() == "exit":
 
-            print(
-                "Goodbye!"
-            )
-
             break
-
 
         documents, sources = retrieve_documents(
             question
         )
-
 
         answer = generate_answer(
             question,
@@ -490,47 +276,5 @@ if __name__ == "__main__":
             sources
         )
 
-
-        print(
-            "\nAssistant:"
-        )
-
-        print(
-            answer
-        )
-
-
-        print(
-            "\nSources:"
-        )
-
-
-        unique_sources = set()
-
-
-        for source in sources:
-
-            if not source:
-
-                continue
-
-
-            source_name = source.get(
-                "source",
-                "Unknown"
-            )
-
-
-            if source_name not in unique_sources:
-
-                print(
-                    "-",
-                    source_name
-                )
-
-                unique_sources.add(
-                    source_name
-                )
-
-
-        print()
+        print("\nAssistant:")
+        print(answer)
