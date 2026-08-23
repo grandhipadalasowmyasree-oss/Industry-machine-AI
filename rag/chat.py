@@ -44,15 +44,65 @@ print("Total machines:", len(df))
 
 def find_machine_id(question):
 
-    match = re.search(
-        r"machine\s*(?:id\s*)?(\d+)",
-        question.lower()
+    question = question.lower().strip()
+
+    patterns = [
+
+        # machine 8321
+        r"\bmachine\s+(?:id\s*)?(\d+)\b",
+
+        # machine id 8321
+        r"\bmachine\s+id\s+(\d+)\b",
+
+        # 8321 machine
+        r"\b(\d+)\s+machine\b",
+
+        # 8321 machine id
+        r"\b(\d+)\s+machine\s+id\b",
+
+        # id 8321
+        r"\bid\s+(\d+)\b"
+    ]
+
+    for pattern in patterns:
+
+        match = re.search(
+            pattern,
+            question
+        )
+
+        if match:
+
+            machine_id = match.group(1)
+
+            print(
+                "DETECTED MACHINE ID:",
+                machine_id
+            )
+
+            return machine_id
+
+    print(
+        "NO MACHINE ID DETECTED"
     )
 
-    if match:
-        return match.group(1)
-
     return None
+def add_machine_id_to_question(question, last_machine_id=None):
+
+    current_machine_id = find_machine_id(question)
+
+    if current_machine_id:
+        return question, current_machine_id
+
+    if last_machine_id:
+        question = (
+            f"Machine {last_machine_id}: "
+            f"{question}"
+        )
+
+        return question, last_machine_id
+
+    return question, None
 
 
 # ============================================
@@ -132,19 +182,35 @@ Machine State: {machine['machine_state']}
 # RETRIEVE DOCUMENTS
 # ============================================
 
-def retrieve_documents(question):
+def retrieve_documents(question, last_machine_id=None):
 
     print(
         "QUESTION RECEIVED:",
         question
     )
 
-    machine_id = find_machine_id(question)
+    # ========================================
+    # FIND CURRENT OR PREVIOUS MACHINE ID
+    # ========================================
+
+    question, machine_id = add_machine_id_to_question(
+        question,
+        last_machine_id
+    )
+
+    print(
+        "FINAL QUESTION:",
+        question
+    )
 
     print(
         "DETECTED MACHINE ID:",
         machine_id
     )
+
+    # ========================================
+    # MACHINE SEARCH
+    # ========================================
 
     if machine_id:
 
@@ -171,26 +237,24 @@ def retrieve_documents(question):
 
             sources = [{
                 "source": "train.csv",
-                "machine_id": machine_id
+                "machine_id": str(machine_id)
             }]
 
             return [machine_text], sources
 
-        else:
+        print(
+            f"Machine {machine_id} was not found."
+        )
 
-            print(
-                f"Machine {machine_id} "
-                "was not found."
-            )
-
-            return [], []
+    # ========================================
+    # NO MACHINE
+    # ========================================
 
     print(
-        "NO MACHINE ID DETECTED."
+        "NO MACHINE DATA FOUND."
     )
 
     return [], []
-
 
 # ============================================
 # GENERATE ANSWER
