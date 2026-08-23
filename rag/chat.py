@@ -50,9 +50,29 @@ print("Documents in ChromaDB:", collection.count())
 # EMBEDDING MODEL
 # ==============================
 
-embedding_model = SentenceTransformer(
-    "all-MiniLM-L6-v2"
-)
+# IMPORTANT:
+# Do NOT load SentenceTransformer during startup.
+# It will be loaded only when normal RAG search is needed.
+
+embedding_model = None
+
+
+def get_embedding_model():
+
+    global embedding_model
+
+    if embedding_model is None:
+
+        print("Loading embedding model...")
+
+        embedding_model = SentenceTransformer(
+            "all-MiniLM-L6-v2",
+            device="cpu"
+        )
+
+        print("Embedding model loaded!")
+
+    return embedding_model
 
 
 # ==============================
@@ -127,7 +147,7 @@ Machine State: {machine['machine_state']}
 def retrieve_documents(question):
 
     # --------------------------------
-    # Check for machine ID
+    # Check for machine ID FIRST
     # --------------------------------
 
     machine_id = find_machine_id(question)
@@ -135,7 +155,7 @@ def retrieve_documents(question):
     if machine_id:
 
         print(
-            f"\n🔎 Searching machine {machine_id}..."
+            f"\nSearching machine {machine_id}..."
         )
 
         machine = get_machine_from_csv(
@@ -147,12 +167,6 @@ def retrieve_documents(question):
             machine_text = machine_to_text(
                 machine
             )
-
-            print(
-                "\n📊 Relevant Machine:"
-            )
-
-            print(machine_text)
 
             sources = [{
                 "source": "train.csv",
@@ -171,12 +185,16 @@ def retrieve_documents(question):
     # --------------------------------
 
     print(
-        "\n🔎 Searching the machine "
+        "\nSearching the machine "
         "health knowledge base..."
     )
 
-    question_embedding = embedding_model.encode(
-        [question]
+    # Load embedding model ONLY now
+    model = get_embedding_model()
+
+    question_embedding = model.encode(
+        [question],
+        convert_to_numpy=True
     )[0]
 
     results = collection.query(
@@ -312,7 +330,7 @@ RESPONSE RULES:
 if __name__ == "__main__":
 
     print(
-        "\n🤖 AI Industrial Assistant"
+        "\nAI Industrial Assistant"
     )
 
     print(
@@ -340,13 +358,13 @@ if __name__ == "__main__":
         )
 
         print(
-            "\n🤖 Assistant:"
+            "\nAssistant:"
         )
 
         print(answer)
 
         print(
-            "\n📚 Sources:"
+            "\nSources:"
         )
 
         unique_sources = set()
