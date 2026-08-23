@@ -1,17 +1,10 @@
 import re
 import os
-from dotenv import load_dotenv
-from google import genai
-
-load_dotenv()
-
-client = genai.Client(
-    api_key=os.getenv("GEMINI_API_KEY"),
-    http_options={"api_version": "v1"}
-)
+import time
 import pandas as pd
-from google import genai
 from dotenv import load_dotenv
+from google import genai
+
 
 # ============================================
 # ENVIRONMENT
@@ -19,14 +12,21 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+if not GEMINI_API_KEY:
+    print("WARNING: GEMINI_API_KEY not found!")
+
+
 # ============================================
 # GEMINI
 # ============================================
 
 client = genai.Client(
-    api_key=os.getenv("GEMINI_API_KEY"),
+    api_key=GEMINI_API_KEY,
     http_options={"api_version": "v1"}
 )
+
 
 # ============================================
 # LOAD DATASET
@@ -62,6 +62,7 @@ def find_machine_id(question):
 def get_machine_from_csv(machine_id):
 
     try:
+
         machine_id = int(machine_id)
 
         machine = df[
@@ -72,9 +73,11 @@ def get_machine_from_csv(machine_id):
         ]
 
         if machine.empty:
+
             print(
                 f"Machine {machine_id} not found."
             )
+
             return None
 
         print(
@@ -128,25 +131,42 @@ Machine State: {machine['machine_state']}
 # ============================================
 # RETRIEVE DOCUMENTS
 # ============================================
+
 def retrieve_documents(question):
 
-    print("QUESTION RECEIVED:", question)
+    print(
+        "QUESTION RECEIVED:",
+        question
+    )
 
     machine_id = find_machine_id(question)
 
-    print("DETECTED MACHINE ID:", machine_id)
+    print(
+        "DETECTED MACHINE ID:",
+        machine_id
+    )
 
     if machine_id:
 
-        machine = get_machine_from_csv(machine_id)
+        machine = get_machine_from_csv(
+            machine_id
+        )
 
-        print("MACHINE RESULT:", machine is not None)
+        print(
+            "MACHINE RESULT:",
+            machine is not None
+        )
 
         if machine is not None:
 
-            machine_text = machine_to_text(machine)
+            machine_text = machine_to_text(
+                machine
+            )
 
-            print("MACHINE DATA FOUND!")
+            print(
+                "MACHINE DATA FOUND!"
+            )
+
             print(machine_text)
 
             sources = [{
@@ -159,14 +179,18 @@ def retrieve_documents(question):
         else:
 
             print(
-                f"Machine {machine_id} was not found."
+                f"Machine {machine_id} "
+                "was not found."
             )
 
             return [], []
 
-    print("NO MACHINE ID DETECTED.")
+    print(
+        "NO MACHINE ID DETECTED."
+    )
 
     return [], []
+
 
 # ============================================
 # GENERATE ANSWER
@@ -178,6 +202,10 @@ def generate_answer(
     sources
 ):
 
+    # ----------------------------------------
+    # NO MACHINE DATA
+    # ----------------------------------------
+
     if not documents:
 
         return (
@@ -185,7 +213,17 @@ def generate_answer(
             "machine information."
         )
 
-    context = "\n\n".join(documents)
+    # ----------------------------------------
+    # CREATE CONTEXT
+    # ----------------------------------------
+
+    context = "\n\n".join(
+        documents
+    )
+
+    # ----------------------------------------
+    # PROMPT
+    # ----------------------------------------
 
     prompt = f"""
 You are an AI Industrial Safety and
@@ -194,65 +232,216 @@ Maintenance Assistant.
 Answer the user's question using ONLY
 the provided machine data.
 
-Do not invent any sensor values.
+IMPORTANT RULES:
 
-Machine data:
+1. Do not invent sensor values.
+2. Do not change machine values.
+3. Pay attention to the Machine ID.
+4. Give a direct answer first.
+5. Mention the important sensor values.
+6. Explain the likely reason using only
+   the available machine data.
+7. Keep the answer simple and clear.
+8. Use bullet points when useful.
+
+For overheating questions, analyze:
+
+- Load
+- RPM
+- Power
+- Vibration
+- Oil pressure
+- Coolant temperature
+- Bearing temperature
+- Operating hours
+- Days since maintenance
+- Anomaly count
+
+For vibration questions, analyze:
+
+- Vibration
+- RPM
+- Load
+- Operating hours
+- Days since maintenance
+- Machine type
+- Maintenance strategy
+
+For maintenance questions, analyze:
+
+- Maintenance strategy
+- Days since maintenance
+- Operating hours
+- Vibration
+- Temperature
+- Oil pressure
+- Anomaly count
+
+MACHINE DATA:
 
 {context}
 
-User question:
+USER QUESTION:
 
 {question}
-
-Instructions:
-
-1. Give the direct answer first.
-2. Mention the important sensor values.
-3. For overheating questions, analyze:
-   - Load
-   - RPM
-   - Power
-   - Vibration
-   - Oil pressure
-   - Coolant temperature
-   - Bearing temperature
-   - Operating hours
-   - Days since maintenance
-   - Anomaly count
-
-4. For maintenance questions, analyze:
-   - Maintenance strategy
-   - Days since maintenance
-   - Operating hours
-   - Vibration
-   - Temperature
-   - Oil pressure
-
-5. Keep the answer simple and clear.
-6. Use bullet points when useful.
 """
 
-    try:
+    # ========================================
+    # GEMINI MODELS
+    # ========================================
 
-        response = client.models.generate_content(
-            model="gemini-3.7-flash",
-            contents=prompt
-        )
+    models_to_try = [
 
-        return response.text
+        "gemini-3.7-flash",
 
-    except Exception as e:
+        "gemini-3.6-flash",
+
+        "gemini-3.5-flash"
+
+    ]
+
+    # ========================================
+    # TRY MODELS
+    # ========================================
+
+    for model_name in models_to_try:
 
         print(
-            "GEMINI ERROR:",
-            e
+            f"\nTrying Gemini model: "
+            f"{model_name}"
         )
 
-        return (
-            "Sorry, I could not generate "
-            "an answer at the moment. "
-            "Please try again."
-        )
+        # ------------------------------------
+        # RETRY SAME MODEL
+        # ------------------------------------
+
+        for attempt in range(2):
+
+            try:
+
+                response = client.models.generate_content(
+
+                    model=model_name,
+
+                    contents=prompt
+
+                )
+
+                # --------------------------------
+                # CHECK RESPONSE
+                # --------------------------------
+
+                if response and response.text:
+
+                    print(
+                        "\nGEMINI ANSWER GENERATED!"
+                    )
+
+                    print(
+                        "MODEL USED:",
+                        model_name
+                    )
+
+                    return response.text
+
+                print(
+                    "Empty response from model."
+                )
+
+            except Exception as e:
+
+                error_message = str(e)
+
+                print(
+                    "\nGEMINI ERROR:"
+                )
+
+                print(
+                    error_message
+                )
+
+                # =================================
+                # RATE LIMIT 429
+                # =================================
+
+                if "429" in error_message:
+
+                    print(
+                        "Gemini quota/rate limit "
+                        "reached."
+                    )
+
+                    if attempt == 0:
+
+                        print(
+                            "Waiting 5 seconds "
+                            "before retry..."
+                        )
+
+                        time.sleep(5)
+
+                        continue
+
+                    else:
+
+                        print(
+                            "Trying next model..."
+                        )
+
+                        break
+
+                # =================================
+                # SERVICE UNAVAILABLE 503
+                # =================================
+
+                elif "503" in error_message:
+
+                    print(
+                        "Gemini service temporarily "
+                        "unavailable."
+                    )
+
+                    if attempt == 0:
+
+                        print(
+                            "Waiting 5 seconds "
+                            "before retry..."
+                        )
+
+                        time.sleep(5)
+
+                        continue
+
+                    else:
+
+                        print(
+                            "Trying next model..."
+                        )
+
+                        break
+
+                # =================================
+                # OTHER ERROR
+                # =================================
+
+                else:
+
+                    print(
+                        "Unexpected Gemini error."
+                    )
+
+                    break
+
+    # ========================================
+    # ALL MODELS FAILED
+    # ========================================
+
+    return (
+        "I found the machine information, "
+        "but the AI service is temporarily "
+        "unavailable. Please try again in "
+        "a few seconds."
+    )
 
 
 # ============================================
@@ -271,9 +460,15 @@ if __name__ == "__main__":
 
     while True:
 
-        question = input("You: ")
+        question = input(
+            "You: "
+        )
 
         if question.lower() == "exit":
+
+            print(
+                "Goodbye!"
+            )
 
             break
 
@@ -287,5 +482,10 @@ if __name__ == "__main__":
             sources
         )
 
-        print("\nAssistant:")
-        print(answer)
+        print(
+            "\nAssistant:"
+        )
+
+        print(
+            answer
+        )
