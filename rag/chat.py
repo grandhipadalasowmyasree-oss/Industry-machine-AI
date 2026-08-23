@@ -1,29 +1,35 @@
 import re
+import os
 import pandas as pd
 import chromadb
-from sentence_transformers import SentenceTransformer
 from google import genai
 from dotenv import load_dotenv
 
-# ==============================
+# =========================================================
 # LOAD ENVIRONMENT VARIABLES
-# ==============================
+# =========================================================
 
 load_dotenv()
 
 
-# ==============================
+# =========================================================
 # GEMINI
-# ==============================
+# =========================================================
+
+api_key = os.getenv("GEMINI_API_KEY")
+
+if not api_key:
+    print("WARNING: GEMINI_API_KEY not found.")
 
 client = genai.Client(
+    api_key=api_key,
     http_options={"api_version": "v1"}
 )
 
 
-# ==============================
+# =========================================================
 # LOAD TRAIN DATA
-# ==============================
+# =========================================================
 
 df = pd.read_csv("data/train.csv")
 
@@ -31,53 +37,39 @@ print("Machine dataset loaded!")
 print("Total machines:", len(df))
 
 
-# ==============================
+# =========================================================
 # CHROMADB
-# ==============================
+# =========================================================
 
-chroma_client = chromadb.PersistentClient(
-    path="chroma_db"
-)
+try:
 
-collection = chroma_client.get_collection(
-    name="industrial_knowledge"
-)
+    chroma_client = chromadb.PersistentClient(
+        path="chroma_db"
+    )
 
-print("Documents in ChromaDB:", collection.count())
+    collection = chroma_client.get_collection(
+        name="industrial_knowledge"
+    )
 
+    print(
+        "Documents in ChromaDB:",
+        collection.count()
+    )
 
-# ==============================
-# EMBEDDING MODEL
-# ==============================
+except Exception as e:
 
-# IMPORTANT:
-# Do NOT load SentenceTransformer during startup.
-# It will be loaded only when normal RAG search is needed.
+    print(
+        "ChromaDB could not be loaded:",
+        e
+    )
 
-embedding_model = None
-
-
-def get_embedding_model():
-
-    global embedding_model
-
-    if embedding_model is None:
-
-        print("Loading embedding model...")
-
-        embedding_model = SentenceTransformer(
-            "all-MiniLM-L6-v2",
-            device="cpu"
-        )
-
-        print("Embedding model loaded!")
-
-    return embedding_model
+    chroma_client = None
+    collection = None
 
 
-# ==============================
+# =========================================================
 # FIND MACHINE ID
-# ==============================
+# =========================================================
 
 def find_machine_id(question):
 
@@ -87,14 +79,15 @@ def find_machine_id(question):
     )
 
     if match:
+
         return match.group(1)
 
     return None
 
 
-# ==============================
+# =========================================================
 # GET MACHINE FROM CSV
-# ==============================
+# =========================================================
 
 def get_machine_from_csv(machine_id):
 
@@ -103,117 +96,194 @@ def get_machine_from_csv(machine_id):
     ]
 
     if machine.empty:
+
         return None
 
     return machine.iloc[0]
 
 
-# ==============================
-# CONVERT MACHINE TO TEXT
-# ==============================
+# =========================================================
+# CONVERT MACHINE DATA TO TEXT
+# =========================================================
 
 def machine_to_text(machine):
 
     return f"""
 Machine ID: {machine['id']}
+
 Machine Type: {machine['machine_type']}
+
 Facility Zone: {machine['facility_zone']}
+
 Shift: {machine['shift']}
+
 Sensor Model: {machine['sensor_model']}
+
 Maintenance Strategy: {machine['maintenance_strategy']}
 
 Load: {machine['load_pct']} %
+
 RPM: {machine['rpm']}
+
 Power: {machine['power_kw']} kW
+
 Voltage: {machine['voltage_v']} V
+
 Power Factor: {machine['power_factor']}
+
 Vibration: {machine['vibration_mm_s']} mm/s
+
 Oil Pressure: {machine['oil_pressure_bar']} bar
+
 Coolant Temperature: {machine['coolant_temp_c']} °C
+
 Bearing Temperature: {machine['bearing_temp_c']} °C
 
 Operating Hours: {machine['operating_hours']}
+
 Days Since Maintenance: {machine['days_since_maintenance']}
+
 Anomaly Count (7d): {machine['anomaly_count_7d']}
+
 Sensor Uptime: {machine['sensor_uptime_pct']} %
+
 Machine State: {machine['machine_state']}
 """
 
 
-# ==============================
-# RETRIEVE DOCUMENTS
-# ==============================
+# =========================================================
+# MACHINE SEARCH
+# =========================================================
 
-def retrieve_documents(question):
-
-    # --------------------------------
-    # Check for machine ID FIRST
-    # --------------------------------
+def search_machine(question):
 
     machine_id = find_machine_id(question)
 
-    if machine_id:
+    if not machine_id:
 
-        print(
-            f"\nSearching machine {machine_id}..."
-        )
+        return None, None
 
-        machine = get_machine_from_csv(
-            machine_id
-        )
+    print(
+        f"\nSearching machine {machine_id}..."
+    )
 
-        if machine is not None:
+    machine = get_machine_from_csv(
+        machine_id
+    )
 
-            machine_text = machine_to_text(
-                machine
-            )
-
-            sources = [{
-                "source": "train.csv",
-                "machine_id": machine_id
-            }]
-
-            return [machine_text], sources
+    if machine is None:
 
         print(
             f"Machine {machine_id} "
             "was not found in train.csv."
         )
 
-    # --------------------------------
-    # Normal RAG search
-    # --------------------------------
+        return None, machine_id
+
+    machine_text = machine_to_text(
+        machine
+    )
 
     print(
-        "\nSearching the machine "
-        "health knowledge base..."
+        "\nMachine found successfully."
     )
 
-    # Load embedding model ONLY now
-    model = get_embedding_model()
+    sources = [
+        {
+            "source": "train.csv",
+            "machine_id": machine_id
+        }
+    ]
 
-    question_embedding = model.encode(
-        [question],
-        convert_to_numpy=True
-    )[0]
+    return machine_text, sources
 
-    results = collection.query(
-        query_embeddings=[
-            question_embedding.tolist()
-        ],
-        n_results=3
+
+# =========================================================
+# SIMPLE CHROMADB SEARCH
+# =========================================================
+
+def search_knowledge_base(question):
+
+    if collection is None:
+
+        print(
+            "Knowledge base is not available."
+        )
+
+        return [], []
+
+    try:
+
+        # ChromaDB can use its configured embedding
+        # function if the collection was created with one.
+
+        results = collection.query(
+            query_texts=[question],
+            n_results=3
+        )
+
+        documents = results.get(
+            "documents",
+            [[]]
+        )[0]
+
+        sources = results.get(
+            "metadatas",
+            [[]]
+        )[0]
+
+        return documents, sources
+
+    except Exception as e:
+
+        print(
+            "Knowledge base search error:",
+            e
+        )
+
+        return [], []
+
+
+# =========================================================
+# RETRIEVE DOCUMENTS
+# =========================================================
+
+def retrieve_documents(question):
+
+    # =====================================================
+    # FIRST: CHECK MACHINE ID
+    # =====================================================
+
+    machine_text, machine_sources = search_machine(
+        question
     )
 
-    documents = results["documents"][0]
+    if machine_text:
 
-    sources = results["metadatas"][0]
+        return [
+            machine_text
+        ], machine_sources
+
+
+    # =====================================================
+    # SECOND: SEARCH KNOWLEDGE BASE
+    # =====================================================
+
+    print(
+        "\nSearching industrial "
+        "safety knowledge base..."
+    )
+
+    documents, sources = search_knowledge_base(
+        question
+    )
 
     return documents, sources
 
 
-# ==============================
+# =========================================================
 # GENERATE ANSWER
-# ==============================
+# =========================================================
 
 def generate_answer(
     question,
@@ -225,32 +295,57 @@ def generate_answer(
 
         return (
             "I don't have enough information "
-            "in the provided documents."
+            "in the provided knowledge base."
         )
+
+
+    # =====================================================
+    # CREATE CONTEXT
+    # =====================================================
 
     context = "\n\n".join(
         documents
     )
 
+
+    # =====================================================
+    # PROMPT
+    # =====================================================
+
     prompt = f"""
 You are an AI Industrial Safety and
 Maintenance Assistant.
 
-You must answer the user's question
-using the provided machine data.
+Your job is to answer questions about
+industrial machines, safety and maintenance.
 
 IMPORTANT RULES:
 
-1. Use ONLY the provided machine data.
-2. Never invent sensor values.
-3. If the requested value exists in the
-   machine data, give the exact value.
-4. Pay attention to the Machine ID.
-5. Give machine-specific answers.
-6. Do not give generic answers when
-   machine data is available.
+1. Use ONLY the information provided in
+   the context.
 
-For overheating questions, analyze:
+2. Never invent sensor values.
+
+3. If machine data is available,
+   use the exact values.
+
+4. Always pay attention to the Machine ID.
+
+5. For machine-specific questions,
+   give a machine-specific answer.
+
+6. Do not invent information that is
+   not present in the context.
+
+7. Keep the answer simple and easy
+   to understand.
+
+8. If the context does not contain
+   enough information, clearly say that
+   the information is not available.
+
+
+For overheating questions, consider:
 
 - Load
 - RPM
@@ -263,6 +358,7 @@ For overheating questions, analyze:
 - Days since maintenance
 - Anomaly count
 
+
 For maintenance questions, consider:
 
 - Days since maintenance
@@ -272,60 +368,89 @@ For maintenance questions, consider:
 - Temperature
 - Oil pressure
 
-MACHINE DATA:
+
+CONTEXT:
 
 {context}
+
 
 USER QUESTION:
 
 {question}
 
-RESPONSE RULES:
 
-- Give a direct answer first.
-- Mention the relevant sensor values.
-- Explain the reason when appropriate.
-- Use headings when useful.
-- Use bullet points for recommendations.
-- Keep the answer simple and clear.
+RESPONSE FORMAT:
+
+Give the direct answer first.
+
+Then mention the important sensor
+values or information.
+
+Then explain the possible reason
+when the context supports it.
+
+Use bullet points when useful.
+
+Keep the response clear and concise.
 """
 
+
+    # =====================================================
+    # GEMINI MODELS
+    # =====================================================
+
     models_to_try = [
-        "gemini-3.7-flash",
-        "gemini-3.6-flash",
-        "gemini-3.5-flash"
+        "gemini-2.5-flash",
+        "gemini-2.0-flash"
     ]
+
+
+    # =====================================================
+    # GENERATE RESPONSE
+    # =====================================================
 
     for model_name in models_to_try:
 
         try:
+
+            print(
+                f"Generating answer using {model_name}..."
+            )
 
             response = client.models.generate_content(
                 model=model_name,
                 contents=prompt
             )
 
-            return response.text
+            if response and response.text:
+
+                return response.text
+
 
         except Exception as e:
 
             print(
-                f"Model {model_name} unavailable."
+                f"Model {model_name} failed:"
             )
 
             print(e)
 
             continue
 
+
+    # =====================================================
+    # ALL MODELS FAILED
+    # =====================================================
+
     return (
-        "Sorry, all available AI models "
-        "are temporarily unavailable."
+        "Sorry, I could not generate an answer "
+        "at the moment. Please try again."
     )
 
 
-# ==============================
+# =========================================================
 # TERMINAL CHAT
-# ==============================
+# =========================================================
 
 if __name__ == "__main__":
 
@@ -337,19 +462,27 @@ if __name__ == "__main__":
         "Type 'exit' to stop.\n"
     )
 
+
     while True:
 
-        question = input("You: ")
+        question = input(
+            "You: "
+        )
+
 
         if question.lower() == "exit":
 
-            print("Goodbye!")
+            print(
+                "Goodbye!"
+            )
 
             break
+
 
         documents, sources = retrieve_documents(
             question
         )
+
 
         answer = generate_answer(
             question,
@@ -357,24 +490,36 @@ if __name__ == "__main__":
             sources
         )
 
+
         print(
             "\nAssistant:"
         )
 
-        print(answer)
+        print(
+            answer
+        )
+
 
         print(
             "\nSources:"
         )
 
+
         unique_sources = set()
 
+
         for source in sources:
+
+            if not source:
+
+                continue
+
 
             source_name = source.get(
                 "source",
                 "Unknown"
             )
+
 
             if source_name not in unique_sources:
 
@@ -386,5 +531,6 @@ if __name__ == "__main__":
                 unique_sources.add(
                     source_name
                 )
+
 
         print()
