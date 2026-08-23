@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
-from rag.chat import retrieve_documents, generate_answer
 import sqlite3
 from datetime import datetime
+
 
 app = Flask(__name__)
 
@@ -44,7 +44,7 @@ def init_database():
         )
     """)
 
-    # Check columns
+    # Check existing columns
     cursor.execute("PRAGMA table_info(users)")
 
     columns = [
@@ -81,14 +81,22 @@ def init_database():
 
 
 # =========================================================
+# INITIALIZE DATABASE
+# =========================================================
+
+init_database()
+
+
+# =========================================================
 # HOME
 # =========================================================
 
 @app.route("/")
 def home():
 
-    # Always start with login
-    return redirect(url_for("login"))
+    return redirect(
+        url_for("login")
+    )
 
 
 # =========================================================
@@ -178,7 +186,6 @@ def login():
                 url_for("chatbot")
             )
 
-        # Invalid login
         error = "Invalid email or password."
 
     return render_template(
@@ -443,6 +450,15 @@ def ask():
         print("USER:", session["username"])
         print("QUESTION:", question)
         print("=================================")
+
+        # =================================================
+        # LOAD RAG ONLY WHEN NEEDED
+        # =================================================
+
+        from rag.chat import (
+            retrieve_documents,
+            generate_answer
+        )
 
         # =================================================
         # RETRIEVE MACHINE DATA / RAG DATA
@@ -718,8 +734,8 @@ def logout():
 
 if __name__ == "__main__":
 
-    init_database()
-
     app.run(
+        host="0.0.0.0",
+        port=5000,
         debug=True
     )
